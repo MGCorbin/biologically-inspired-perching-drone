@@ -22,12 +22,14 @@ private:
     void motorForward();
     void motorReverse();
     void motorStop();
+    void detectOvercurrent();
 
 private:
     MotorDirection m_MotorDirection;
     int m_MotorA, m_MotorB;
     int m_ADCpin;
     bool m_Overcurrent;
+    uint16_t m_FilteredCurrent;
 };
 
 #endif // INCLUDE_MOTOR

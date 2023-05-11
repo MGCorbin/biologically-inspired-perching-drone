@@ -31,12 +31,14 @@ void Motor::setDirection(MotorDirection dir)
         /* if we WERE reversing, only allow forward */
         m_MotorDirection = dir;
         m_Overcurrent = false;  // clear the overcurrent flag
+        Serial.println("Overcurrent cleared. New direction: FORWARD");
     }
     else if(dir == MotorDirection::REVERSE && oldDirection == MotorDirection::FORWARD)
     {
         /* if we WERE going forward, only allow reverse */
         m_MotorDirection = dir;
         m_Overcurrent = false;  // clear the overcurrent flag
+        Serial.println("Overcurrent cleared. New direction: REVERSE");
     }
 
     if(dir == MotorDirection::FORWARD || dir == MotorDirection::REVERSE)
@@ -84,36 +86,54 @@ void Motor::motorStop()
 
 void Motor::monitorCurrent()
 {
-    const uint16_t SAMPLE_SIZE = 10, MOTOR_OVERCURRENT = 500;
+    const uint16_t SAMPLE_SIZE = 10;
     static uint32_t I_buffer = 0;
-    static uint16_t sample_count = 0, filteredCurrent = 0;
+    static uint16_t sample_count = 0;
 
 
     I_buffer += adc_to_current(analogRead(m_ADCpin));
     sample_count ++;
 
-    if(sample_count >= SAMPLE_SIZE)
+    if(sample_count == SAMPLE_SIZE)
     {
         sample_count = 0;
-        filteredCurrent = I_buffer / SAMPLE_SIZE;
-        Serial.println(filteredCurrent);
+        m_FilteredCurrent = I_buffer / SAMPLE_SIZE + 1;
+        I_buffer = 0;
     }
+    detectOvercurrent();
 
-    if(filteredCurrent > MOTOR_OVERCURRENT)
+}
+
+void Motor::detectOvercurrent()
+{
+    static uint16_t overcurrent_count = 0;
+    const uint16_t OVERCURRENT_TIME = 200;   // number of ms we need overcurrent for before setting flag
+    const uint16_t MOTOR_OVERCURRENT = 500; // value in mA
+
+    if(m_FilteredCurrent > MOTOR_OVERCURRENT)
     {
-        setDirection(MotorDirection::STOP);
-        m_Overcurrent = true;
-    }
+        overcurrent_count ++;
 
+        if(overcurrent_count > OVERCURRENT_TIME)
+        {
+            setDirection(MotorDirection::STOP);
+            m_Overcurrent = true;
+            Serial.println("Motor overcurrent detected");
+        }
+    }
+    else
+    {
+        overcurrent_count = 0;
+    }
 }
 
 uint16_t adc_to_current(uint16_t adc_count)
 {
     /* returns motor current in mA */
     int temp_v =  (adc_count / 1023.0f) * 5000; // calculate the voltage in mV (5000mV system)
-    Serial.println(temp_v);
     /* calculate the current
     * divide by 5 as using X5 diff amp,
     * I=V/R - I Sense resistor is 0.5 ohm */
-    return (temp_v / 5.0f) / 0.5f;
+    uint16_t temp_i = (temp_v / 5.0f) / 0.5f;
+    return temp_i;
 }

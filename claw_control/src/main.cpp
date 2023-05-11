@@ -3,8 +3,8 @@
 #include "Ultrasonic.h"
 #include "motor.h"
 
-#define TEST_DC_MOTOR       1
-#define CLAW_ACTIVATE       10
+// #define TEST_DC_MOTOR       0
+#define FC_SWITCH           10
 #define ULTRASONIC_PIN      11
 #define MOTOR_A             2
 #define MOTOR_B             3
@@ -30,7 +30,7 @@ void setup()
     Serial.begin(115200);
     Serial.println("Startup...");
     servo.attach(9);
-    pinMode(CLAW_ACTIVATE, INPUT);
+    pinMode(FC_SWITCH, INPUT);
     pinMode(MOTOR_A, OUTPUT);
     pinMode(MOTOR_B, OUTPUT);
     pinMode(A0, INPUT);
@@ -68,21 +68,23 @@ void loop()
 
 
 #else
-#define TIMEOUT 300 // milis
-    static unsigned int count = 0, oldmilis;
-    int distance = 0;
 
+    static uint16_t count = 0;
+    static unsigned long oldmilis = 0;
+    const uint16_t TIMEOUT = 300;   // number of ms PWM input from FC needs to be high before we say its inactive
     if (millis() != oldmilis)
     {
         oldmilis = millis();
+        motor.handle();
 
         switch (mode)
         {
-        case MANUAL:
-            if (!digitalRead(10))
+        case MANUAL:        // manual mode: switch active = close, inactive = open
+            if (!digitalRead(FC_SWITCH))
             {
-                Serial.println("CLOSING");
-                servo.write(180);
+                // Serial.println("CLOSING");
+                // servo.write(180);
+                motor.setDirection(MotorDirection::FORWARD);
                 count = 0;
             }
             else if (count < TIMEOUT)
@@ -91,22 +93,23 @@ void loop()
             }
             else
             {
-                Serial.println("Opening - MANUAL");
-                servo.write(90);
+                // Serial.println("Opening - MANUAL");
+                // servo.write(90);
+                motor.setDirection(MotorDirection::REVERSE);
             }
             break;
 
-        case ULTRASONIC:
-            if (!digitalRead(10))
+        case ULTRASONIC:    // ultrasonic mode: swich active = enable ultrasonic sensor, inactive = open
+            if (!digitalRead(FC_SWITCH))
             {
-                distance = get_dist();
+                int distance = get_dist();
                 /* ULTRASONIC ENABLED */
                 Serial.println("Ultra enabled");
                 count = 0;
                 Serial.println(count);
                 handle_autoclose(distance, 20);
             }
-            else if (count < TIMEOUT && digitalRead(10))
+            else if (count < TIMEOUT && digitalRead(FC_SWITCH))
             {
                 count++;
             }
