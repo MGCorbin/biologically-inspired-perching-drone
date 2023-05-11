@@ -16,6 +16,6 @@ The files within the project contain both the hardware and software required to 
 ## Licenses
 Hardware (all files stored under the [hardware](./biologically-inspired-perching-drone/hardware) folder) are under the Creative Commons Attribution-ShareAlike 4.0 International license.
 
-Firmware (all filer stored under the [claw_control](./biologically-inspired-perching-drone/claw_control) folder) are under the MIT license.
+Firmware (all files stored under the [claw_control](./biologically-inspired-perching-drone/claw_control) folder) are under the MIT license.
 
 See each folders LICENSE.txt file for details.
