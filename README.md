@@ -13,6 +13,9 @@ The files within the project contain both the hardware and software required to 
 * [hardware/](./biologically-inspired-perching-drone/hardware)          - folder containing hardware (both electronics & CAD)
 * [README.md](./biologically-inspired-perching-drone/README.md)
 
+## Drone Image
+![drone_perching](./images/drone_perching.jpeg)
+
 ## Licenses
 Hardware (all files stored under the [hardware](./biologically-inspired-perching-drone/hardware) folder) are under the Creative Commons Attribution-ShareAlike 4.0 International license.
 
