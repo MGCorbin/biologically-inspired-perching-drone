@@ -13,6 +13,13 @@ The files within the project contain both the hardware and software required to 
 * [hardware/](./biologically-inspired-perching-drone/hardware)          - folder containing hardware (both electronics & CAD)
 * [README.md](./biologically-inspired-perching-drone/README.md)
 
+## Hardware
+In this folder you can find STL files that can be downloaded for 3D printing and the original parameterised SolidWorks CAD files and assemblies that can be modified to customise/remix the design to suit different drone and hardware configurations. 
+* [Bivalve_7_talon/] - folder containing the Solidworks part files and STL files for a version of the bivalve claw mechanism with additional claws (3-4 config).
+* [Bivalve_Claw_Mechanism/] - folder containing the SolidWorks part files, STL files, and assembly for the bivalve claw mechanism design.
+* [Tendon_Arm/] - folder contianing the STL files used during the testing and development of the tendon claw design.
+
+
 ## Drone Image
 ![drone_perching](./images/drone_perching.jpeg)
 
