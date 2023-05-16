@@ -4,11 +4,25 @@
 #include "motor.h"
 
 // #define TEST_DC_MOTOR       0
-#define FC_SWITCH           10
-#define ULTRASONIC_PIN      11
-#define MOTOR_A             2
-#define MOTOR_B             3
-#define MOTOR_ADC           A0
+#define DEBUG_PRINT
+
+#ifdef ARDUINO_ARCH_AVR
+    /* Arduino pin defs */
+    #pragma message("Compiling for Arduino")
+    #define FC_SWITCH           10
+    #define ULTRASONIC_PIN      11
+    #define MOTOR_A             2
+    #define MOTOR_B             3
+    #define MOTOR_ADC           A0
+#elif ARDUINO_RASPBERRY_PI_PICO
+    /* PICO pin defs */
+    #pragma message("Compiling for Pico")
+    #define FC_SWITCH           20
+    #define ULTRASONIC_PIN      1
+    #define MOTOR_A             27
+    #define MOTOR_B             26
+    #define MOTOR_ADC           A2      //28
+#endif
 
 Servo servo;
 Ultrasonic ultrasonic(ULTRASONIC_PIN);
@@ -18,11 +32,13 @@ typedef enum
 {
     MANUAL,
     ULTRASONIC
-} mode_t;
-mode_t mode;
+} ctrl_mode_t;
+ctrl_mode_t mode;
 
+/* local functions */
 void handle_autoclose(int dist, const int threshold);
-int get_dist();
+uint16_t get_dist();
+void debug_print();
 
 void setup()
 {
@@ -39,43 +55,28 @@ void setup()
     if (digitalRead(7))
     {
         mode = ULTRASONIC;
-        Serial.print("ULTRASONIC MODE");
+        Serial.println("ULTRASONIC MODE");
     }
     else
     {
         mode = MANUAL;
-        Serial.print("MANUAL MODE");
+        Serial.println("MANUAL MODE");
     }
     delay(1000);
 }
 
 void loop()
 {
-    // long pulsewidth = pulseIn(10, HIGH, 1000);
-
-#ifdef TEST_DC_MOTOR
-    static uint16_t hundredMsCount = 0, count = 0;
-    static unsigned long oldMillis = 0;
-    static uint8_t motor_state = 0;
-
-    if (millis() != oldMillis)
-    {
-        oldMillis = millis();
-
-        motor.handle();
-        motor.setDirection(MotorDirection::FORWARD);
-    }
-
-
-#else
-
     static uint16_t count = 0;
     static unsigned long oldmilis = 0;
     const uint16_t TIMEOUT = 300;   // number of ms PWM input from FC needs to be high before we say its inactive
+
     if (millis() != oldmilis)
     {
+        /* run every ms */
         oldmilis = millis();
         motor.handle();
+        debug_print();
 
         switch (mode)
         {
@@ -106,7 +107,6 @@ void loop()
                 /* ULTRASONIC ENABLED */
                 Serial.println("Ultra enabled");
                 count = 0;
-                Serial.println(count);
                 handle_autoclose(distance, 20);
             }
             else if (count < TIMEOUT && digitalRead(FC_SWITCH))
@@ -116,27 +116,23 @@ void loop()
             else
             {
                 Serial.println("Opening - ULTRA");
-                Serial.println(count);
-                servo.write(0);
+                motor.setDirection(MotorDirection::REVERSE);
             }
             break;
         }
     }
-#endif
 }
 
-int get_dist() // call every ms
+uint16_t get_dist() // call every ms
 {
     static int distTimer;
-    int RangeInCenti;
+    static uint16_t RangeInCenti;
 
     distTimer++;
     if (distTimer >= 100)
     {
         distTimer = 0;
         RangeInCenti = ultrasonic.MeasureInCentimeters();
-        Serial.print("Ultrasonic Sensing: ");
-        Serial.println(RangeInCenti);
     }
 
     return RangeInCenti;
@@ -153,12 +149,27 @@ void handle_autoclose(int dist, const int threshold)
         if (autoCloseTimer >= CLOSE_TIME)
         {
             /* CLOSE */
-            servo.write(180);
+            motor.setDirection(MotorDirection::FORWARD);
         }
     }
     else
     {
         autoCloseTimer = 0;
-        servo.write(90); // open if we have closed too early
+        motor.setDirection(MotorDirection::REVERSE);
     }
+}
+
+void debug_print()
+{
+#ifdef DEBUG_PRINT
+    static uint16_t count = 0;
+    const uint16_t PRINT_TIME = 500;
+    count ++;
+    if(count >= PRINT_TIME)
+    {
+        /* add whatever you want to debug print here*/
+        count = 0;
+        Serial.println(motor.getMotorCurrent());
+    }
+#endif
 }

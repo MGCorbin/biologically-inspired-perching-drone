@@ -5,7 +5,8 @@
 uint16_t adc_to_current(uint16_t adc_count);
 
 Motor::Motor(int pinA, int pinB, int adcPin)
-    : m_MotorA(pinA), m_MotorB(pinB), m_ADCpin(adcPin), m_MotorDirection(MotorDirection::STOP), m_Overcurrent(false)
+    : m_MotorDirection(MotorDirection::STOP), m_MotorA(pinA),
+    m_MotorB(pinB), m_ADCpin(adcPin), m_Overcurrent(false), m_FilteredCurrent(0)
 {
     /* empty */
 }
@@ -66,7 +67,7 @@ void Motor::motorForward()
 {
     digitalWrite(m_MotorA, LOW);
     digitalWrite(m_MotorB, LOW);
-    _delay_us(10);      // delay to avoid fet fight
+    delayMicroseconds(10);      // delay to avoid fet fight
     digitalWrite(m_MotorA, HIGH);
 }
 
@@ -74,7 +75,7 @@ void Motor::motorReverse()
 {
     digitalWrite(m_MotorA, LOW);
     digitalWrite(m_MotorB, LOW);
-    _delay_us(10);      // delay to avoid fet fight
+    delayMicroseconds(10);      // delay to avoid fet fight
     digitalWrite(m_MotorB, HIGH);
 }
 
@@ -98,6 +99,7 @@ void Motor::monitorCurrent()
     {
         sample_count = 0;
         m_FilteredCurrent = I_buffer / SAMPLE_SIZE + 1;
+        // Serial.println(m_FilteredCurrent);   // debug only
         I_buffer = 0;
     }
     detectOvercurrent();
@@ -107,8 +109,8 @@ void Motor::monitorCurrent()
 void Motor::detectOvercurrent()
 {
     static uint16_t overcurrent_count = 0;
-    const uint16_t OVERCURRENT_TIME = 200;   // number of ms we need overcurrent for before setting flag
-    const uint16_t MOTOR_OVERCURRENT = 500; // value in mA
+    const uint16_t OVERCURRENT_TIME = 500;   // number of ms we need overcurrent for before setting flag
+    const uint16_t MOTOR_OVERCURRENT = 250; // value in mA
 
     if(m_FilteredCurrent > MOTOR_OVERCURRENT)
     {
@@ -130,10 +132,18 @@ void Motor::detectOvercurrent()
 uint16_t adc_to_current(uint16_t adc_count)
 {
     /* returns motor current in mA */
-    int temp_v =  (adc_count / 1023.0f) * 5000; // calculate the voltage in mV (5000mV system)
+#ifdef ARDUINO_ARCH_AVR
+    #pragma message("Scaling ADC for Arduino")
+    int temp_v =  (adc_count / 1023.0f) * 5000; // calculate the voltage in mV (5V, 10bit system)
+#elif ARDUINO_RASPBERRY_PI_PICO
+    #pragma message("Scaling ADC for Pico")
+    int temp_v =  (adc_count / 4096.0f) * 3300; // calculate the voltage in mV (3.3V, 12bit system)
+#else
+    #error "Board architecture not supported"
+#endif
     /* calculate the current
-    * divide by 5 as using X5 diff amp,
+    * divide by 5 as using X5.6 diff amp,
     * I=V/R - I Sense resistor is 0.5 ohm */
-    uint16_t temp_i = (temp_v / 5.0f) / 0.5f;
+    uint16_t temp_i = (temp_v / 5.6f) / 0.5f;
     return temp_i;
 }

@@ -15,6 +15,7 @@ public:
 
     void setDirection(MotorDirection dir);
     MotorDirection getDirection() const { return m_MotorDirection; }
+    uint16_t getMotorCurrent() const { return m_FilteredCurrent; }
     void handle();
 
 private:
