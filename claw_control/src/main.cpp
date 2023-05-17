@@ -3,7 +3,6 @@
 #include "Ultrasonic.h"
 #include "motor.h"
 
-// #define TEST_DC_MOTOR       0
 #define DEBUG_PRINT
 
 #ifdef ARDUINO_ARCH_AVR
@@ -21,7 +20,7 @@
     #define FC_SWITCH           20
     #define ULTRASONIC_PIN      1
     #define MOTOR_A             27
-    #define MOTOR_B             26
+    #define MOTOR_B             19      // changed due to hardware issue
     #define MOTOR_ADC           A2      //28
     #define MODE_SELECT         21
 #endif
@@ -48,7 +47,7 @@ void setup()
     Serial.begin(115200);
     Serial.println("Startup...");
     servo.attach(9);
-    pinMode(FC_SWITCH, INPUT_PULLUP);
+    pinMode(FC_SWITCH, INPUT);
     pinMode(MOTOR_A, OUTPUT);
     pinMode(MOTOR_B, OUTPUT);
     pinMode(A0, INPUT);
@@ -73,13 +72,14 @@ void loop()
     static uint16_t count = 0;
     static unsigned long oldmilis = 0;
     const uint16_t TIMEOUT = 300;   // number of ms PWM input from FC needs to be high before we say its inactive
+    static uint8_t state = 0;
 
     if (millis() != oldmilis)
     {
         /* run every ms */
         oldmilis = millis();
         motor.handle();
-        //debug_print();
+        debug_print();
 
         switch (mode)
         {
@@ -87,7 +87,6 @@ void loop()
             if (!digitalRead(FC_SWITCH))
             {
                 // Serial.println("CLOSING");
-                // servo.write(180);
                 motor.setDirection(MotorDirection::FORWARD);
                 count = 0;
             }
@@ -98,18 +97,17 @@ void loop()
             else
             {
                 // Serial.println("Opening - MANUAL");
-                // servo.write(90);
                 motor.setDirection(MotorDirection::REVERSE);
             }
-            Serial.print("Manual\n");
             break;
 
         case ULTRASONIC:    // ultrasonic mode: swich active = enable ultrasonic sensor, inactive = open
             if (!digitalRead(FC_SWITCH))
             {
-                int distance = get_dist();
                 /* ULTRASONIC ENABLED */
-                Serial.println("Ultra enabled");
+                uint16_t distance = get_dist();
+                Serial.println(distance);
+                // Serial.println("Ultra enabled");
                 count = 0;
                 handle_autoclose(distance, 20);
             }
@@ -122,7 +120,6 @@ void loop()
                 Serial.println("Opening - ULTRA");
                 motor.setDirection(MotorDirection::REVERSE);
             }
-            Serial.print("ULTRA!\n");
             break;
         }
     }
@@ -145,8 +142,8 @@ uint16_t get_dist() // call every ms
 
 void handle_autoclose(int dist, const int threshold)
 {
-    static int autoCloseTimer = 0;
-    const int CLOSE_TIME = 100;
+    static uint16_t autoCloseTimer = 0;
+    const uint16_t CLOSE_TIME = 100;
 
     if (dist < threshold)
     {
@@ -179,17 +176,3 @@ void debug_print()
 #endif
 }
 
-
-// // LED_BUILTIN in connected to pin 25 of the RP2040 chip.
-// // It controls the on board LED, at the top-left corner.
-// #include <Arduino.h>
-// void setup() {
-//   pinMode(LED_BUILTIN, OUTPUT);
-// }
-
-// void loop() {
-//   digitalWrite(LED_BUILTIN, HIGH);
-//   delay(500);
-//   digitalWrite(LED_BUILTIN, LOW);
-//   delay(500);
-// }

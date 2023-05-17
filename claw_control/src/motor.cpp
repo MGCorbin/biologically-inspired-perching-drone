@@ -137,7 +137,7 @@ uint16_t adc_to_current(uint16_t adc_count)
     int temp_v =  (adc_count / 1023.0f) * 5000; // calculate the voltage in mV (5V, 10bit system)
 #elif ARDUINO_RASPBERRY_PI_PICO
     #pragma message("Scaling ADC for Pico")
-    int temp_v =  (adc_count / 4096.0f) * 3300; // calculate the voltage in mV (3.3V, 12bit system)
+    int temp_v =  (adc_count / 1023.0f) * 3300; // calculate the voltage in mV (3.3V, 12bit system)
 #else
     #error "Board architecture not supported"
 #endif
