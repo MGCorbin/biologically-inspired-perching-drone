@@ -14,6 +14,7 @@
     #define MOTOR_A             2
     #define MOTOR_B             3
     #define MOTOR_ADC           A0
+    #define MODE_SELECT         7
 #elif ARDUINO_RASPBERRY_PI_PICO
     /* PICO pin defs */
     #pragma message("Compiling for Pico")
@@ -22,6 +23,7 @@
     #define MOTOR_A             27
     #define MOTOR_B             26
     #define MOTOR_ADC           A2      //28
+    #define MODE_SELECT         21
 #endif
 
 Servo servo;
@@ -46,13 +48,14 @@ void setup()
     Serial.begin(115200);
     Serial.println("Startup...");
     servo.attach(9);
-    pinMode(FC_SWITCH, INPUT);
+    pinMode(FC_SWITCH, INPUT_PULLUP);
     pinMode(MOTOR_A, OUTPUT);
     pinMode(MOTOR_B, OUTPUT);
     pinMode(A0, INPUT);
+    pinMode(MODE_SELECT,INPUT_PULLUP);
 
     delay(100);
-    if (digitalRead(7))
+    if (digitalRead(MODE_SELECT))
     {
         mode = ULTRASONIC;
         Serial.println("ULTRASONIC MODE");
@@ -76,7 +79,7 @@ void loop()
         /* run every ms */
         oldmilis = millis();
         motor.handle();
-        debug_print();
+        //debug_print();
 
         switch (mode)
         {
@@ -98,6 +101,7 @@ void loop()
                 // servo.write(90);
                 motor.setDirection(MotorDirection::REVERSE);
             }
+            Serial.print("Manual\n");
             break;
 
         case ULTRASONIC:    // ultrasonic mode: swich active = enable ultrasonic sensor, inactive = open
@@ -118,6 +122,7 @@ void loop()
                 Serial.println("Opening - ULTRA");
                 motor.setDirection(MotorDirection::REVERSE);
             }
+            Serial.print("ULTRA!\n");
             break;
         }
     }
@@ -173,3 +178,18 @@ void debug_print()
     }
 #endif
 }
+
+
+// // LED_BUILTIN in connected to pin 25 of the RP2040 chip.
+// // It controls the on board LED, at the top-left corner.
+// #include <Arduino.h>
+// void setup() {
+//   pinMode(LED_BUILTIN, OUTPUT);
+// }
+
+// void loop() {
+//   digitalWrite(LED_BUILTIN, HIGH);
+//   delay(500);
+//   digitalWrite(LED_BUILTIN, LOW);
+//   delay(500);
+// }
