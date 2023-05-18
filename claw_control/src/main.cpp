@@ -64,7 +64,7 @@ void setup()
         mode = MANUAL;
         Serial.println("MANUAL MODE");
     }
-    delay(1000);
+    delay(5000);
 }
 
 void loop()
@@ -117,7 +117,7 @@ void loop()
             }
             else
             {
-                Serial.println("Opening - ULTRA");
+                // Serial.println("Opening - ULTRA");
                 motor.setDirection(MotorDirection::REVERSE);
             }
             break;
